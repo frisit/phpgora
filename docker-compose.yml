@@ -1,0 +1,102 @@
+version: "3.7"
+
+# todo: разобраться с rabbitmq чёт файлы конфигов и т.д. лежат не совсем правильно
+
+# Сети
+networks:
+    internal:  
+    rabbitmq_net:
+      driver: bridge
+
+services:
+  rabbitmq:
+    # image: rabbitmq:3-management
+    image: rabbitmq:management-alpine
+    container_name: loc-rabbit
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_ERLANG_COOKIE: 'some secret cookie'
+    ports:
+      - 5672:5672
+      - 15672:15672
+#    volumes:
+#      - ./docker/rabbitmq/logs:/var/log/rabbitmq
+#      - ./docker/rabbitmq/etc/:/etc/rabbitmq/
+#      - ./docker/rabbitmq/data/:/var/lib/rabbitmq/
+    networks:
+      - rabbitmq_net
+    
+    # networks:
+    #   - rabbitmq_go_net
+  nginx:
+    # Какую версию образа nginx из официального хранилища DockerHub используем
+    image: nginx:stable-alpine
+    container_name: loc-nginx
+    # Ниже прокидываем порты. NGINX в контейнере работает на дефолтном 80, а мы возьмем 8000
+    ports:
+      - "80:80"
+    # Монтируем директории, слева директории на основной системе, справа - куда они монтируются в контейнере
+    volumes:
+      - ./sites:/var/www
+      - ./docker/config/nginx:/etc/nginx/conf.d
+      - ./docker/data/logs:/var/log/nginx/
+    # Зависимости  
+    depends_on:
+      - php
+      - mysql
+      - rabbitmq
+    networks:
+      - internal
+      - rabbitmq_net
+
+  php:
+    build:
+      context: ./docker/config/php
+      dockerfile: Dockerfile
+    container_name: loc-php
+    volumes:
+      - ./sites:/var/www
+      - ./docker/config/php/php.ini:/usr/local/etc/php/php.ini
+    ports:
+      - "9000:9000"
+    depends_on:
+      - rabbitmq
+    networks:
+      - internal
+      - rabbitmq_net
+  golang:
+    build:
+      context: ./docker/config/golang
+      dockerfile: Dockerfile
+    container_name: loc-golang
+    depends_on:
+      - rabbitmq
+    networks:
+      - internal
+      - rabbitmq_net
+
+
+  # psql:
+  #   image: postgres:13.3
+  #   environment:
+  #     POSTGRES_DB: "php.local"
+  #     POSTGRES_USER: "admin"
+  #     POSTGRES_PASSWORD: "admin"
+  #   ports:
+  #     - "5432:5432"
+  mysql:
+      image: mysql:5.7
+      container_name: loc-mysql
+      restart: unless-stopped
+      command: --default-authentication-plugin=mysql_native_password
+      command: --innodb_use_native_aio=0
+      ports:
+        - "3306:3306"
+      volumes:
+        - ./docker/data/mysql:/var/lib/mysql
+      # Задаем пароль для root пользователя
+      environment:
+        MYSQL_ROOT_PASSWORD: secret
+      networks:
+        - internal
+        - rabbitmq_net

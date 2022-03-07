@@ -1,0 +1,10 @@
+.git
+
+docker/data/logs
+docker/data/mysql
+docker/rabbitmq/mnesia
+
+docker/rabbitmq/logs
+sites/.composer
+sites/.bash_history
+sites/ramq.local/vendor

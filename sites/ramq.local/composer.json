@@ -1,0 +1,32 @@
+{
+    "name": "ramq/ramq",
+    "type": "project",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "ramq",
+            "email": "ramq@ramq.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Backend\\": "src/Backend/"
+        }
+    },
+    "require": {
+        "php": ">=7.4.0",
+        "php-amqplib/php-amqplib": "^3.0"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ],
+    "config": {
+        "process-timeout": 1800,
+        "github-oauth": {
+                 "github.com": "ab046cf3ee906d4aa67b20bab01fdfe6ddd7ead6"
+        }
+    }
+}
